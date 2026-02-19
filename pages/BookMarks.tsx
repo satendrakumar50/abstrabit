@@ -19,28 +19,32 @@ export default function BookMarks({ user }: { user: any }) {
     setBookmarks(data || []);
   };
   // 🔹 Load + realtime sync across ALL tabs
-  useEffect(() => {
-    if (!user?.sub) return;
+useEffect(() => {
+  if (!user?.sub) return;
 
-    fetchBookmarks();
+  fetchBookmarks();
 
-    const channel = supabase
-      .channel("realtime-bookmarks")
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "bookmarks",
-          filter: `user_id=eq.${user.sub}`,
-        },
-        fetchBookmarks, // runs in every open tab
-      )
-      .subscribe();
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [user?.sub]);
+  const channel = supabase
+    .channel("realtime-bookmarks")
+    .on(
+      "postgres_changes",
+      {
+        event: "*",
+        schema: "public",
+        table: "bookmarks",
+        filter: `user_id=eq.${user.sub}`,
+      },
+      () => {
+        fetchBookmarks();
+      }
+    )
+    .subscribe();
+
+  return () => {
+    supabase.removeChannel(channel);
+  };
+}, [user?.sub, fetchBookmarks]);
+
 
   // 🔹 Add bookmark (instant same‑tab update + realtime other tabs)
   const addBookmark = async () => {
